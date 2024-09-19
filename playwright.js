@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer';
+import { chromium } from 'playwright';
 import path from 'path';
 import { existsSync, mkdirSync, readdirSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -13,35 +13,30 @@ async function downloadFromWebsite(url) {
         mkdirSync(downloadPath);
     }
 
-    const browser = await puppeteer.launch({
-        headless: false,
-        defaultViewport: null,
-        args: ['--start-maximized']
+    const browser = await chromium.launch({
+        headless: false
     });
-    const page = await browser.newPage();
+    const context = await browser.newContext({
+        viewport: null,
+        acceptDownloads: true
+    });
+    const page = await context.newPage();
 
     try {
         // Navigate to the website
-        await page.goto(url, { waitUntil: 'networkidle0' });
+        await page.goto(url, { waitUntil: 'networkidle' });
 
         // Wait for the download option to appear and click it
-        const downloadOptionSelector = 'span:contains("Download")';
-        await page.waitForSelector(downloadOptionSelector, { visible: true });
+        const downloadOptionSelector = 'span:has-text("Download")';
+        await page.waitForSelector(downloadOptionSelector, { state: 'visible' });
         await page.click(downloadOptionSelector);
 
         // Wait for the download to start
-        await page.waitForTimeout(1000);
-
-        // Function to check if download is complete
-        const isDownloadComplete = () => {
-            const files = readdirSync(downloadPath);
-            return files.some(file => !file.endsWith('.crdownload'));
-        };
+        const downloadPromise = page.waitForEvent('download');
+        const download = await downloadPromise;
 
         // Wait for the download to complete
-        while (!isDownloadComplete()) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        }
+        await download.saveAs(path.join(downloadPath, download.suggestedFilename()));
 
         console.log('Download completed successfully!');
     } catch (error) {
