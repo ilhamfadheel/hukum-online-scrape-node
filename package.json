@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@mendable/firecrawl-js": "^1.4.5",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "puppeteer": "^23.4.0"
   }
 }

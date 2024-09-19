@@ -21,4 +21,6 @@ Thumbs.db
 *.log
 
 # Scraped data
-data/
+output/
+
+cookies.json
